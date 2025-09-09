@@ -6,6 +6,7 @@ BINARY_NAME ?= todo
 all: test build
 
 build:
+	mkdir -p bin
 	go build -o bin/$(BINARY_NAME) cmd/todo/main.go
 
 clean:
