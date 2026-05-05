@@ -13,18 +13,6 @@ type Task struct {
 	status      string
 }
 
-func add(tasks []Task, task Task) []Task {
-	tasks = append(tasks, task)
-	list(tasks)
-	return tasks
-}
-
-func list(tasks []Task) {
-	for _, task := range tasks {
-		fmt.Println("- ", task.String())
-	}
-}
-
 func (t Task) String() string {
 	return fmt.Sprintf("\tID: %d,\n\tTitle: %s,\n\tDescription: %s,\n\tStatus: %s", t.id, t.title, t.description, t.status)
 }
@@ -33,15 +21,28 @@ func (t *Task) Complete() {
 	t.status = "complete"
 }
 
-func markComplete(tasks []Task, id int) []Task {
-	for i, task := range tasks {
+type TaskList []Task
+
+func (tl TaskList) String() string {
+	result := ""
+	for _, task := range tl {
+		result += task.String() + "\n"
+	}
+	return result
+}
+
+func (tl *TaskList) Add(task Task) TaskList {
+	*tl = append(*tl, task)
+	return *tl
+}
+
+func (tl *TaskList) MarkComplete(id int) {
+	for i, task := range *tl {
 		if task.id == id {
-			tasks[i].Complete()
+			(*tl)[i].Complete()
 			break
 		}
 	}
-	list(tasks)
-	return tasks
 }
 
 func help() {
@@ -52,7 +53,7 @@ func help() {
 }
 
 func main() {
-	tasks := []Task{
+	tasks := TaskList{
 		{id: 1, title: "Task 1", description: "Description of Task 1", status: "pending"},
 		{id: 2, title: "Task 2", description: "Description of Task 2", status: "pending"},
 	}
@@ -82,11 +83,12 @@ func main() {
 		}
 
 		fmt.Println("Adding item...")
-		tasks = add(tasks, task)
+		tasks = tasks.Add(task)
+		fmt.Println(tasks)
 		lastIDCreated++
 	case "list":
 		fmt.Println("Listing items...")
-		list(tasks)
+		fmt.Println(tasks)
 	case "help":
 		help()
 	case "markComplete":
@@ -95,7 +97,9 @@ func main() {
 			fmt.Println("Invalid task ID")
 			return
 		}
-		tasks = markComplete(tasks, id)
+		tasks.MarkComplete(id)
+		fmt.Printf("Marked task %d as complete.\n", id)
+		fmt.Println(tasks)
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
 		help()
