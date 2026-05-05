@@ -69,12 +69,58 @@ This file maps Go concepts to the projects and sections where they are applied.
 
 ### Functions and Methods
 - Project 1, Section 3
+- Concept: Methods in Go are functions attached to a type using a receiver. The receiver appears between `func` and the method name.
+- Additional Notes:
+  - **Value Receiver**: Operates on a copy of the type. Use when the method only reads from the receiver.
+    ```go
+    func (t Task) String() string {
+        return fmt.Sprintf("ID: %d, Title: %s", t.id, t.title)
+    }
+    ```
+  - **Pointer Receiver**: Operates on the original object. Use when the method modifies the receiver.
+    ```go
+    func (t *Task) markComplete() {
+        t.status = "complete"
+    }
+    ```
+  - **Rule of thumb**: If any method on a type uses a pointer receiver, make all methods use pointer receivers for consistency.
+  - **Calling methods**: Same syntax for both — `task.String()` or `task.markComplete()`. Go handles the dereferencing automatically.
 
 ### Structs and Interfaces
 - Project 1, Section 3
+- Concept: Interfaces in Go are satisfied implicitly — any type that implements the required methods satisfies the interface, with no `implements` keyword needed.
+- Additional Notes:
+  - **fmt.Stringer Interface**: If a type implements `String() string`, the `fmt` package calls it automatically.
+    ```go
+    type Stringer interface {
+        String() string
+    }
+    // fmt.Println(task) will call task.String() if it exists
+    ```
+  - **Implicit satisfaction**: Unlike Python's ABCs or Java's `implements`, Go interfaces are duck-typed at compile time. If your type has the right methods, it satisfies the interface — no declaration needed.
 
 ### Error Handling
-- Project 1, Section 5
+- Project 1, Section 2
+- Concept: Error handling in Go is done using the `error` type. Functions often return an `error` as the second value to indicate failure.
+- Additional Notes:
+  - **Checking for Errors**:
+    ```go
+    id, err := strconv.Atoi(os.Args[2])
+    if err != nil {
+        fmt.Println("Invalid task ID")
+        return
+    }
+    ```
+  - **Nil Errors**:
+    - A `nil` error means the operation was successful.
+    - Always check for `err != nil` to handle errors gracefully.
+  - **Common Practices**:
+    - Return early when an error occurs to keep code clean and readable.
+    ```go
+    if err != nil {
+        return err
+    }
+    ```
 
 ### File I/O
 - Project 1, Section 4
