@@ -4,104 +4,104 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"task-manager/cli"
+	"task-manager/tasks"
 )
 
-type Task struct {
-	id          int
-	title       string
-	description string
-	status      string
-}
-
-func (t Task) String() string {
-	return fmt.Sprintf("\tID: %d,\n\tTitle: %s,\n\tDescription: %s,\n\tStatus: %s", t.id, t.title, t.description, t.status)
-}
-
-func (t *Task) Complete() {
-	t.status = "complete"
-}
-
-type TaskList []Task
-
-func (tl TaskList) String() string {
-	result := ""
-	for _, task := range tl {
-		result += task.String() + "\n"
-	}
-	return result
-}
-
-func (tl *TaskList) Add(task Task) TaskList {
-	*tl = append(*tl, task)
-	return *tl
-}
-
-func (tl *TaskList) MarkComplete(id int) {
-	for i, task := range *tl {
-		if task.id == id {
-			(*tl)[i].Complete()
-			break
-		}
-	}
-}
-
-func help() {
-	fmt.Println("Available commands:")
-	fmt.Println("  add <task>  - Add task to the manager")
-	fmt.Println("  list        - List tasks in the manager")
-	fmt.Println("  help        - Show this help message")
-}
-
 func main() {
-	tasks := TaskList{
-		{id: 1, title: "Task 1", description: "Description of Task 1", status: "pending"},
-		{id: 2, title: "Task 2", description: "Description of Task 2", status: "pending"},
+	taskList := tasks.TaskList{}
+	taskList, err := taskList.Load("tasks.json")
+	if err != nil {
+		fmt.Println("Error loading tasks:", err)
+		os.Exit(1)
 	}
-	lastIDCreated := len(tasks)
+	lastIDCreated := len(taskList)
 
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: go run main.go <input>")
-		return
+		cli.Help()
+		os.Exit(2)
 	}
 	command := os.Args[1]
 	switch command {
 	case "add":
 		if len(os.Args) < 3 {
 			fmt.Println("Title is required for adding a task")
-			return
+			os.Exit(2)
 		}
 		title := os.Args[2]
 		description := ""
 		if len(os.Args) > 3 {
 			description = os.Args[3]
 		}
-		task := Task{
-			id:          lastIDCreated + 1,
-			title:       title,
-			description: description,
-			status:      "pending",
+		task := tasks.Task{
+			ID:          lastIDCreated + 1,
+			Title:       title,
+			Description: description,
+			Status:      "pending",
 		}
 
 		fmt.Println("Adding item...")
-		tasks = tasks.Add(task)
-		fmt.Println(tasks)
-		lastIDCreated++
+		taskList = taskList.Add(task)
+		fmt.Println(taskList)
+		taskList.Save("tasks.json")
 	case "list":
 		fmt.Println("Listing items...")
-		fmt.Println(tasks)
+		fmt.Println(taskList)
 	case "help":
-		help()
+		cli.Help()
 	case "markComplete":
 		id, err := strconv.Atoi(os.Args[2])
 		if err != nil {
 			fmt.Println("Invalid task ID")
-			return
+			os.Exit(2)
 		}
-		tasks.MarkComplete(id)
+		err = taskList.MarkComplete(id)
+		if err != nil {
+			fmt.Println("Error marking task as complete:", err)
+			os.Exit(1)
+		}
 		fmt.Printf("Marked task %d as complete.\n", id)
-		fmt.Println(tasks)
+		err = taskList.Save("tasks.json")
+		if err != nil {
+			fmt.Println("Error saving tasks:", err)
+			os.Exit(1)
+		}
+		fmt.Println(taskList)
+	case "save":
+		filename := "tasks.json"
+		if len(os.Args) > 3 {
+			filename = os.Args[2]
+		}
+		fmt.Println("Saving items...")
+		err := taskList.Save(filename)
+		if err != nil {
+			fmt.Println("Error saving items.")
+			os.Exit(1)
+		} else {
+			fmt.Println("Items saved successfully.")
+		}
+	case "load":
+		filename := "tasks.json"
+		if len(os.Args) > 3 {
+			filename = os.Args[2]
+		}
+		fmt.Println("Loading items...")
+		taskList, err := taskList.Load(filename)
+		if err != nil {
+			fmt.Println("Error loading items.")
+			os.Exit(1)
+		} else {
+			fmt.Println("Items loaded successfully.")
+		}
+		fmt.Println(taskList)
+	case "clear":
+		taskList = tasks.TaskList{}
+		taskList.Save("tasks.json")
+		fmt.Println("Cleared all items.")
 	default:
 		fmt.Printf("Unknown command: %s\n", command)
-		help()
+		cli.Help()
+		os.Exit(2)
 	}
 }
